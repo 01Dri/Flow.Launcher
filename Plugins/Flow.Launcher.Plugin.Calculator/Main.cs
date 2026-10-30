@@ -61,6 +61,11 @@ namespace Flow.Launcher.Plugin.Calculator
 
             if (string.IsNullOrWhiteSpace(query.Search))
             {
+                // If user set a non-global action keyword, we show the history results when they do not type anything
+                if (query.ActionKeyword != Plugin.Query.GlobalPluginWildcardSign)
+                {
+                    return GetHistoryResults(query.Search);
+                }
                 return EmptyResults;
             }
 
@@ -189,25 +194,7 @@ namespace Flow.Launcher.Plugin.Calculator
                     var resultsToReturn = new List<Result>();
                     if (_settings.EnableHistory)
                     {
-                        foreach (var item in History.GetItemsExcluding(originalQuery))
-                        {
-                            var timeDeltaStr = HistoryHelper.GetTimeDeltaString(Context, item.CalculatedAt);
-                            resultsToReturn.Add(new Result
-                            {
-                                Title = $"{item.Query} = {item.CalcResult}",
-                                SubTitle = Context == null
-                                    ? timeDeltaStr
-                                    : Localize.flowlauncher_plugin_calculator_history_subtitle(timeDeltaStr),
-                                IcoPath = HistoryItem.IcoPath,
-                                BadgeIcoPath = HistoryItem.BadgeIconPath,
-                                ShowBadge = true,
-                                Score = HistoryItem.HistoryItemScore,
-                                // Keep history ordered by recency, not by how often each entry was run
-                                AddSelectedCount = false,
-                                CopyText = item.CalcResult,
-                                Action = CreateChangeQueryAction(item.Query)
-                            });
-                        }
+                        resultsToReturn = GetHistoryResults(originalQuery);
                     }
                     return results.Concat(resultsToReturn).ToList();
 
@@ -230,7 +217,30 @@ namespace Flow.Launcher.Plugin.Calculator
             return EmptyResults;
         }
 
-
+        private List<Result> GetHistoryResults(string query)
+        {
+            var resultsToReturn = new List<Result>();
+            foreach (var item in History.GetItemsExcluding(query))
+            {
+                var timeDeltaStr = HistoryHelper.GetTimeDeltaString(Context, item.CalculatedAt);
+                resultsToReturn.Add(new Result
+                {
+                    Title = $"{item.Query} = {item.CalcResult}",
+                    SubTitle = Context == null
+                        ? timeDeltaStr
+                        : Localize.flowlauncher_plugin_calculator_history_subtitle(timeDeltaStr),
+                    IcoPath = HistoryItem.IcoPath,
+                    BadgeIcoPath = HistoryItem.BadgeIconPath,
+                    ShowBadge = true,
+                    Score = HistoryItem.HistoryItemScore,
+                    // Keep history ordered by recency, not by how often each entry was run
+                    AddSelectedCount = false,
+                    CopyText = item.CalcResult,
+                    Action = CreateChangeQueryAction(item.Query)
+                });
+            }
+            return resultsToReturn;
+        }
 
         private Func<ActionContext, bool> BuildResultAction
         (
