@@ -62,7 +62,7 @@ namespace Flow.Launcher.Plugin.Calculator
             if (string.IsNullOrWhiteSpace(query.Search))
             {
                 // If user set a non-global action keyword, we show the history results when they do not type anything
-                if (query.ActionKeyword != Plugin.Query.GlobalPluginWildcardSign)
+                if (_settings.EnableHistory && query.ActionKeyword != Plugin.Query.GlobalPluginWildcardSign)
                 {
                     return GetHistoryResults(query.Search);
                 }
