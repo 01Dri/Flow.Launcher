@@ -64,7 +64,7 @@ namespace Flow.Launcher.Plugin.Calculator
                 // If user set a non-global action keyword, we show the history results when they do not type anything
                 if (_settings.EnableHistory && !string.IsNullOrEmpty(query.ActionKeyword)) // Empty for home/global.
                 {
-                    return GetHistoryResults(query.Search);
+                    return GetHistoryResults(query.Search, query.ActionKeyword);
                 }
                 return EmptyResults;
             }
@@ -194,7 +194,7 @@ namespace Flow.Launcher.Plugin.Calculator
                     var resultsToReturn = new List<Result>();
                     if (_settings.EnableHistory)
                     {
-                        resultsToReturn = GetHistoryResults(originalQuery);
+                        resultsToReturn = GetHistoryResults(originalQuery, query.ActionKeyword);
                     }
                     return results.Concat(resultsToReturn).ToList();
 
@@ -217,7 +217,7 @@ namespace Flow.Launcher.Plugin.Calculator
             return EmptyResults;
         }
 
-        private List<Result> GetHistoryResults(string query)
+        private List<Result> GetHistoryResults(string query, string actionKeyword)
         {
             var resultsToReturn = new List<Result>();
             foreach (var item in History.GetItemsExcluding(query))
@@ -236,7 +236,7 @@ namespace Flow.Launcher.Plugin.Calculator
                     // Keep history ordered by recency, not by how often each entry was run
                     AddSelectedCount = false,
                     CopyText = item.CalcResult,
-                    Action = CreateChangeQueryAction(item.Query)
+                    Action = CreateChangeQueryAction(item.Query, actionKeyword)
                 });
             }
             return resultsToReturn;
@@ -307,11 +307,14 @@ namespace Flow.Launcher.Plugin.Calculator
         /// letting the user re-run it while the normal result remains available for copying.
         /// Returns false so the launcher stays open on the re-run expression.
         /// </summary>
-        private Func<ActionContext, bool> CreateChangeQueryAction(string query)
+        private Func<ActionContext, bool> CreateChangeQueryAction(string query, string actionKeyword)
         {
             return (_) =>
             {
-                Context.API.ChangeQuery(query, true);
+                var fullQuery = string.IsNullOrEmpty(actionKeyword)
+                    ? query
+                    : $"{actionKeyword} {query}";
+                Context.API.ChangeQuery(fullQuery, true);
                 return false;
             };
         }
